@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.pyc
+
+# Environment
+chatbot/
+venv/
+.env
+
+# VS Code
+.vscode/

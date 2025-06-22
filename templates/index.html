@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat with AI</title>
+    <style>
+        body { font-family: Arial; background: #f4f4f4; padding: 20px; }
+        .chat-box { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; }
+        input[type="text"] { width: 80%; padding: 10px; }
+        button { padding: 10px 20px; }
+        .chat-history { margin-top: 20px; }
+        .chat-history div { margin-bottom: 10px; }
+        .user-msg { color: blue; font-weight: bold; }
+        .bot-msg { color: green; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="chat-box">
+        <h2>🤖 Chatbot</h2>
+        
+        <!-- Displaying conversation history -->
+        <div class="chat-history">
+            {% for message in chat_history.split("\n") %}
+                {% if "User" in message %}
+                    <div class="user-msg">{{ message }}</div>
+                {% elif "AI" in message %}
+                    <div class="bot-msg">{{ message }}</div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        
+        <!-- Form to submit user input -->
+        <form method="POST">
+            <input type="text" name="user_input" placeholder="Ask me anything..." required />
+            <button type="submit">Send</button>
+        </form>
+
+        
+    </div>
+</body>
+</html>
