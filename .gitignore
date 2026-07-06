@@ -9,3 +9,4 @@ venv/
 
 # VS Code
 .vscode/
+user.db

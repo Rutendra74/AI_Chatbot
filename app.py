@@ -1,7 +1,8 @@
-from flask import Flask, render_template, request, session
+from flask import Flask, render_template, request, session, redirect
 from langchain_ollama import OllamaLLM
+from werkzeug.security import check_password_hash,generate_password_hash
 from langchain_core.prompts import ChatPromptTemplate
-
+import sqlite3
 app = Flask(__name__)
 app.secret_key = 'Rutendra'  
 
@@ -15,11 +16,66 @@ Question: {question}
 Answer:
 '''
 
-model = OllamaLLM(model="llama3")
+model = OllamaLLM(model="llama3.2")
 prompt = ChatPromptTemplate.from_template(template)
 chain = prompt | model
 
-@app.route("/", methods=["GET", "POST"])
+@app.route('/signup',methods=['GET','POST'])
+def signup():
+    if request.method=='POST':
+        email=request.form['email']
+        password=request.form['password']
+        username=request.form['username']
+        if not email or not password:
+            return render_template('signup.html',error='All Fields are Required!!')
+        hash_password=generate_password_hash(password)
+        conn=sqlite3.connect('user.db')
+        cursor=conn.cursor()
+        cursor.execute('SELECT id FROM users WHERE email=?',(email,))
+        user=cursor.fetchone()
+        if user is not None:
+            return render_template('signup.html',error='User Already Exist')
+            conn.close()
+        cursor.execute('SELECT id from users WHERE username=?',(username,))
+        user_id=cursor.fetchone()
+        if user_id is not None:
+            return render_template('signup.html',error='Username Already Exist!')
+            conn.close()
+
+        cursor.execute('INSERT INTO users(username,email,password_hash) VALUES (?,?,?)',(username,email,hash_password))
+        conn.commit()
+        conn.close()
+        return render_template('login.html')
+    
+    return render_template('signup.html')
+
+@app.route('/login',methods=['GET','POST'])
+def login():
+    if request.method=='POST':
+        email=request.form['email']
+        password=request.form['password']
+        conn=sqlite3.connect('user.db')
+        cursor=conn.cursor()
+
+        cursor.execute('SELECT id,password_hash FROM users WHERE email=?',(email,))
+        user=cursor.fetchone()
+        conn.close()
+
+        if user is None:
+            return render_template('login.html',error='Account not found! Please signup')
+        user_id,password_hash=user
+        if not check_password_hash(password_hash,password):
+            return render_template('login.html',error='Invalid password')
+        session['user_id']=user_id
+        return redirect('/chat')
+    return render_template('login.html')
+
+
+@app.route('/',methods=['GET','POST'])
+def home():
+    return render_template('home.html')
+
+@app.route("/chat", methods=["GET", "POST"])
 def index():
     # Initialize chat history if not already in session
     if "chat_history" not in session:
