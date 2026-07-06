@@ -8,5 +8,5 @@ This project is a **local-first AI chatbot** powered by **LangChain** and **Llam
 - Flask-based web UI
 - Runs locally with Ollama
 
-## 📂 Project Structure
+
 
