@@ -134,8 +134,19 @@ http://127.0.0.1:5000
     responses.
 
 ------------------------------------------------------------------------
-chatbot.png
+## 📸 Screenshots
 
+### home
+
+![Login](screenshot/home.png)
+
+### Login
+
+![Upload](screenshot/login.png)
+
+### Chat Interface
+
+![Chat](screenshot/chatbot.png)
 ------------------------------------------------------------------------
 
 ## 🔮 Future Improvements
