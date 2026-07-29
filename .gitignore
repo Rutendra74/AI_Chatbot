@@ -10,3 +10,5 @@ venv/
 # VS Code
 .vscode/
 user.db
+vector_store/
+uploads/

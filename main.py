@@ -2,15 +2,17 @@ from langchain_ollama import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
 
 template = """
-You are a friendly and knowledgeable teacher.
+You are a helpful AI assistant.
 
-Conversation History:
+Use only the following context.
+
+Context:
 {context}
 
-User Question:
+Question:
 {question}
 
-Answer the question clearly and accurately.
+Answer:
 """
 
 model = OllamaLLM(model="llama3.2")

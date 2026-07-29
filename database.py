@@ -14,13 +14,14 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS messages(id INTEGER PRIMARY KEY AUT
     content TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id) )''')
+cursor.execute('''CREATE TABLE IF NOT EXISTS document(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                document_name TEXT NOT NULL,
+                uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                file_path TEXT NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id))''')
 
-cursor.execute(
-    """
-    INSERT INTO users(username,email,password_hash)
-    VALUES(?,?,?)
-    """,
-    ("Rutendra","test@gmail.com","dummyhash")
-)
+
 conn.commit()
 conn.close()
