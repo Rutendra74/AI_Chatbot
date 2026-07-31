@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect,url_for
+from flask import Flask, render_template, request, redirect,url_for,make_response
 from langchain_ollama import OllamaLLM
 from werkzeug.security import check_password_hash,generate_password_hash
 from langchain_core.prompts import ChatPromptTemplate
@@ -108,6 +108,11 @@ def login():
         return response
 
     return render_template('login.html')
+@app.route('/logout')
+def logout():
+    response=redirect(url_for('login'))
+    unset_jwt_cookies(response)
+    return response
 
 def process_pdf(document_id,path):
     pdf=PdfReader(path)
@@ -230,11 +235,30 @@ def index():
 
     conn.close()
 
-    return render_template(
+    response = make_response(
+    render_template(
         "index.html",
         response=bot_result,
         rows=rows
     )
+)
+
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+
+    return response
+@jwt.unauthorized_loader
+def unauthorized_callback(reason):
+    return redirect(url_for("login"))
+
+@jwt.invalid_token_loader
+def invalid_token_callback(reason):
+    return redirect(url_for("login"))
+
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):
+    return redirect(url_for("login"))
 if __name__ == "__main__":
     
     app.run(debug=True)
