@@ -1,4 +1,4 @@
-# 🤖 AI-Powered RAG Chatbot with Flask, FAISS & Ollama
+# 🤖 ContextIQ – AI-powered document intelligence platform using Flask, RAG, FAISS, and secure authentication.
 
 An AI-powered **Retrieval-Augmented Generation (RAG)** chatbot that
 allows users to upload PDF documents and ask questions grounded in their
@@ -21,6 +21,7 @@ generate context-aware answers through a secure Flask web application.
 -   🛡️ Flask-Limiter rate limiting
 -   🗄️ SQLite database
 -   🎯 Answers based only on uploaded document context
+-   🌙 Modern Dark Theme
 
 ------------------------------------------------------------------------
 
@@ -36,7 +37,7 @@ generate context-aware answers through a secure Flask web application.
   Vector Store     FAISS
   PDF Processing   PyPDF2
   Security         Flask-Limiter
-  Frontend         HTML, CSS
+  Frontend         HTML, CSS , JavaScript
 
 ------------------------------------------------------------------------
 
@@ -138,20 +139,23 @@ http://127.0.0.1:5000
 
 ### home
 
-![Login](screenshot/home.png)
+![Home](screenshot/PolishedHome.png)
+
+### Signup
+
+![Signup](screenshot/polishedsignin.png)
 
 ### Login
 
-![Upload](screenshot/login.png)
+![Login](screenshot/polishedlogin.png)
 
 ### Chat Interface
 
-![Chat](screenshot/chatbot.png)
+![Chat](screenshot/polishedchatbot.png)
 ------------------------------------------------------------------------
 
 ## 🔮 Future Improvements
 
--   Multiple document support
 -   Conversation memory
 -   Streaming responses
 -   Docker deployment

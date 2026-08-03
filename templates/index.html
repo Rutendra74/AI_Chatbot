@@ -1,149 +1,490 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Chat with AI</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ContetIQ — Chat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#05080f; --fg:#e8eefc; --muted:#93a4c4;
+  --blue:#3b82f6; --cyan:#22d3ee;
+  --glass:rgba(255,255,255,.045); --glass-border:rgba(255,255,255,.10);
+  --radius:20px; --grad:linear-gradient(135deg,var(--blue),var(--cyan));
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--fg);font-family:'Inter',system-ui,sans-serif;line-height:1.6;
+  height:100vh;overflow:hidden;
+}
+h1,h2,h3,.brand{font-family:'Space Grotesk',sans-serif;line-height:1.15;letter-spacing:-.02em}
+a{text-decoration:none;color:inherit}
+a:focus-visible, button:focus-visible, input:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 
-    <style>
-        body{
-            font-family:Arial, sans-serif;
-            background:#f4f4f4;
-            padding:20px;
-        }
+body::before{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(60rem 40rem at 15% -10%,rgba(59,130,246,.18),transparent 60%),
+    radial-gradient(50rem 35rem at 90% 5%,rgba(34,211,238,.14),transparent 60%),
+    radial-gradient(45rem 35rem at 50% 110%,rgba(59,130,246,.10),transparent 60%);
+}
 
-        .chat-box{
-            max-width:700px;
-            margin:auto;
-            background:white;
-            border-radius:10px;
-            padding:20px;
-            box-shadow:0px 0px 10px rgba(0,0,0,0.1);
-        }
+.app{
+  display:flex;
+  height:100vh;
+}
 
-        h2{
-            text-align:center;
-        }
+/* ============ SIDEBAR ============ */
+.sidebar{
+  width:280px;
+  flex:none;
+  background:var(--glass);
+  border-right:1px solid var(--glass-border);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+  display:flex;
+  flex-direction:column;
+  padding:26px 20px;
+  animation:fadeIn .6s ease both;
+}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
-        .chat-container{
-            height:60vh;
-            overflow-y:auto;
-            border:1px solid #ddd;
-            padding:15px;
-            border-radius:8px;
-            margin-bottom:15px;
-            background:#fafafa;
-        }
+.brand-row{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{
+  width:38px;height:38px;border-radius:12px;background:var(--grad);
+  display:grid;place-items:center;font-size:1.1rem;color:#04101d;
+  box-shadow:0 8px 24px rgba(34,211,238,.3);
+  flex:none;
+}
+.brand-name{font-weight:700;font-size:1.05rem}
 
-        .user-msg{
-            color:blue;
-            font-weight:bold;
-            margin-bottom:10px;
-        }
+.divider{height:1px;background:var(--glass-border);margin:18px 0}
 
-        .bot-msg{
-            color:green;
-            font-weight:bold;
-            margin-bottom:10px;
-        }
+.sidebar-label{
+  font-size:.72rem;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:12px;
+  font-weight:600;
+}
 
-        .upload-form{
-            margin-bottom:15px;
-            display:flex;
-            gap:10px;
-            align-items:center;
-        }
+/* Upload card */
+.upload-card{
+  border:1.5px dashed var(--glass-border);
+  border-radius:16px;
+  padding:18px 14px;
+  text-align:center;
+  transition:border-color .25s,background .25s;
+  position:relative;
+}
+.upload-card:hover{
+  border-color:rgba(34,211,238,.5);
+  background:rgba(34,211,238,.04);
+}
+.upload-card .icon{font-size:1.6rem;margin-bottom:8px;display:block}
+.upload-card p{font-size:.82rem;color:var(--muted);margin-bottom:12px}
+.upload-card input[type="file"]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+}
+.file-name{
+  font-size:.76rem;
+  color:var(--cyan);
+  margin-top:8px;
+  word-break:break-all;
+  display:none;
+}
+.btn-upload{
+  width:100%;
+  padding:11px;
+  border:none;
+  border-radius:10px;
+  background:var(--grad);
+  color:#04101d;
+  font-weight:600;
+  font-size:.86rem;
+  cursor:pointer;
+  margin-top:10px;
+  box-shadow:0 8px 22px rgba(34,211,238,.22);
+  transition:transform .25s,box-shadow .25s;
+}
+.btn-upload:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(34,211,238,.35)}
 
-        .input-container{
-            display:flex;
-            gap:10px;
-        }
+.sidebar-nav{margin-top:auto;display:flex;flex-direction:column;gap:6px}
+.nav-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:11px 12px;
+  border-radius:10px;
+  color:var(--muted);
+  font-size:.9rem;
+  font-weight:500;
+  transition:background .2s,color .2s,transform .2s;
+  cursor:pointer;
+}
+.nav-item:hover{background:rgba(255,255,255,.05);color:var(--fg);transform:translateX(2px)}
+.nav-item.logout:hover{background:rgba(248,113,113,.08);color:#fca5a5}
 
-        input[type="text"]{
-            flex:1;
-            padding:10px;
-        }
+/* ============ MAIN CHAT AREA ============ */
+.main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+  min-width:0;
+}
 
-        button{
-            padding:10px 20px;
-            cursor:pointer;
-        }
-    </style>
+.chat-header{
+  padding:22px 32px;
+  border-bottom:1px solid var(--glass-border);
+  backdrop-filter:blur(14px);
+}
+.chat-header h1{font-size:1.3rem;font-weight:700}
+.chat-header p{color:var(--muted);font-size:.85rem;margin-top:4px}
 
+.chat-container{
+  flex:1;
+  overflow-y:auto;
+  padding:28px 32px;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  scroll-behavior:smooth;
+}
+.chat-container::-webkit-scrollbar{width:8px}
+.chat-container::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:8px}
+
+.msg-row{
+  display:flex;
+  animation:msgIn .35s cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes msgIn{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:none}
+}
+.msg-row.user{justify-content:flex-end}
+.msg-row.ai{justify-content:flex-start}
+
+.bubble{
+  max-width:min(560px,72%);
+  padding:13px 18px;
+  border-radius:16px;
+  font-size:.95rem;
+  line-height:1.55;
+  word-wrap:break-word;
+  overflow-wrap:break-word;
+}
+.bubble .role-tag{
+  display:block;
+  font-size:.68rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-bottom:5px;
+  font-weight:700;
+  opacity:.75;
+}
+.msg-row.user .bubble{
+  background:var(--grad);
+  color:#04101d;
+  border-bottom-right-radius:6px;
+}
+.msg-row.user .bubble .role-tag{color:rgba(4,16,29,.65)}
+.msg-row.ai .bubble{
+  background:var(--glass);
+  border:1px solid var(--glass-border);
+  backdrop-filter:blur(10px);
+  color:var(--fg);
+  border-bottom-left-radius:6px;
+}
+.msg-row.ai .bubble .role-tag{
+  background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+}
+
+/* Empty state */
+.empty-state{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:20px;
+}
+.empty-state .wave{font-size:2.4rem;margin-bottom:14px}
+.empty-state h2{font-size:1.5rem;font-weight:700;margin-bottom:8px}
+.empty-state p{color:var(--muted);font-size:.94rem;margin-bottom:30px}
+.suggestions{
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+  justify-content:center;
+  max-width:640px;
+}
+.suggest-card{
+  background:var(--glass);
+  border:1px solid var(--glass-border);
+  border-radius:14px;
+  padding:16px 20px;
+  font-size:.87rem;
+  color:var(--muted);
+  min-width:150px;
+  cursor:pointer;
+  transition:transform .3s cubic-bezier(.2,.8,.2,1),border-color .3s,color .3s;
+}
+.suggest-card:hover{
+  transform:translateY(-4px);
+  border-color:rgba(34,211,238,.45);
+  color:var(--fg);
+}
+
+/* ============ INPUT AREA ============ */
+.input-area{
+  padding:18px 32px 26px;
+  border-top:1px solid var(--glass-border);
+}
+.input-area form{margin:0}
+.input-container{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  background:var(--glass);
+  border:1px solid var(--glass-border);
+  border-radius:999px;
+  padding:6px 6px 6px 22px;
+  transition:border-color .25s,box-shadow .25s;
+}
+.input-container:focus-within{
+  border-color:rgba(34,211,238,.55);
+  box-shadow:0 0 0 4px rgba(34,211,238,.10);
+}
+.input-container input[type="text"]{
+  flex:1;
+  background:transparent;
+  border:none;
+  outline:none;
+  color:var(--fg);
+  font-family:'Inter',sans-serif;
+  font-size:.96rem;
+  padding:12px 4px;
+}
+.input-container input[type="text"]::placeholder{color:var(--muted)}
+.btn-send{
+  border:none;
+  background:var(--grad);
+  color:#04101d;
+  width:44px;height:44px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  flex:none;
+  box-shadow:0 8px 22px rgba(34,211,238,.28);
+  transition:transform .25s,box-shadow .25s;
+}
+.btn-send:hover{transform:translateY(-2px) scale(1.04);box-shadow:0 12px 28px rgba(34,211,238,.4)}
+.btn-send svg{width:19px;height:19px}
+
+/* ============ RESPONSIVE ============ */
+@media(max-width:900px){
+  .sidebar{
+    position:fixed;
+    left:0;top:0;bottom:0;
+    z-index:40;
+    transform:translateX(-100%);
+    transition:transform .3s cubic-bezier(.2,.8,.2,1);
+    box-shadow:20px 0 50px rgba(0,0,0,.5);
+  }
+  .sidebar.open{transform:translateX(0)}
+  .mobile-topbar{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px 18px;
+    border-bottom:1px solid var(--glass-border);
+  }
+  .mobile-topbar button{
+    background:var(--glass);
+    border:1px solid var(--glass-border);
+    color:var(--fg);
+    width:38px;height:38px;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:1.1rem;
+  }
+}
+@media(min-width:901px){
+  .mobile-topbar{display:none}
+}
+@media(max-width:600px){
+  .chat-header,.chat-container,.input-area{padding-left:18px;padding-right:18px}
+  .bubble{max-width:85%}
+  .suggestions{flex-direction:column}
+}
+</style>
 </head>
-
 <body>
-    <nav class="navbar">
-    
-        <div class="nav-right">
-            <a href="{{ url_for('logout') }}" class="logout-btn">
-                Logout
-            </a>
+
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand-row">
+      <span class="logo">◆</span>
+      <span class="brand-name">ContextIQ</span>
+    </div>
+
+    <div class="sidebar-label">Knowledge Base</div>
+
+
+    <form class="upload-form"
+          action="/upload"
+          method="POST"
+          enctype="multipart/form-data"
+          id="uploadForm">
+
+        <div class="upload-card">
+            <span class="icon">📄</span>
+            <p>Drag &amp; drop a PDF or click to browse</p>
+            <input type="file"
+                   name="pdf_file"
+                   accept=".pdf"
+                   required
+                   id="pdfFile">
+            <div class="file-name" id="fileName"></div>
         </div>
-    </nav>
 
-<div class="chat-box">
+        <button type="submit" class="btn-upload">📄 Upload Knowledge Base</button>
 
-    <h2>🤖 AI Chatbot</h2>
+    </form>
 
-    <!-- Chat History -->
-    <div class="chat-container">
+    <div class="divider"></div>
 
+    <div class="sidebar-nav">
+      <div class="nav-item">⚙ Settings</div>
+      
+      <a href="{{ url_for('logout') }}" class="nav-item logout">🚪 Logout</a>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN CHAT AREA ============ -->
+  <div class="main">
+
+    <div class="mobile-topbar">
+      <button id="menuToggle" aria-label="Toggle menu">☰</button>
+      <span class="brand-name">ContextIQ</span>
+    </div>
+
+    <div class="chat-header">
+      <h1>AI Assistant</h1>
+      <p>Powered by RAG + FAISS Vector Search</p>
+    </div>
+
+    
+    <div class="chat-container" id="chatContainer">
+
+      {% if rows %}
         {% for role, message in rows %}
 
             {% if role=="User" %}
-                <div class="user-msg">
-                    {{ role }} : {{ message }}
+                <div class="msg-row user">
+                    <div class="bubble">
+                        <span class="role-tag">{{ role }}</span>
+                        {{ message }}
+                    </div>
                 </div>
 
             {% elif role=="AI" %}
-                <div class="bot-msg">
-                    {{ role }} : {{ message }}
+                <div class="msg-row ai">
+                    <div class="bubble">
+                        <span class="role-tag">{{ role }}</span>
+                        {{ message }}
+                    </div>
                 </div>
 
             {% endif %}
 
         {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <span class="wave">👋</span>
+          <h2>Welcome!</h2>
+          <p>Upload a PDF to begin chatting.</p>
+          <div class="suggestions">
+            <div class="suggest-card">Explain this PDF</div>
+            <div class="suggest-card">Summarize Document</div>
+            <div class="suggest-card">Ask Questions</div>
+          </div>
+        </div>
+      {% endif %}
 
     </div>
 
-
-    <!-- Upload PDF -->
-    <form class="upload-form"
-          action="/upload"
-          method="POST"
-          enctype="multipart/form-data">
-
-        <input type="file"
-               name="pdf_file"
-               accept=".pdf"
-               required>
-
-        <button type="submit">
-            📄 Upload PDF
-        </button>
-
-    </form>
-
-
-    <!-- Chat Input -->
-    <form method="POST">
-
+    <!-- Chat input form preserved exactly: method="POST", input name="user_input" -->
+    <div class="input-area">
+      <form method="POST" id="chatForm">
         <div class="input-container">
+          <input
+              type="text"
+              name="user_input"
+              placeholder="Ask anything about your uploaded documents..."
+              required
+              id="userInput">
 
-            <input
-                type="text"
-                name="user_input"
-                placeholder="Ask me anything..."
-                required>
-
-            <button type="submit">
-                Send
-            </button>
-
+          <button type="submit" class="btn-send" aria-label="Send message">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
         </div>
+      </form>
+    </div>
 
-    </form>
+  </div>
 
 </div>
+
+<script>
+  // Sidebar toggle for mobile
+  const sidebar = document.getElementById('sidebar');
+  const menuToggle = document.getElementById('menuToggle');
+  if (menuToggle) {
+    menuToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+  }
+
+  // Show selected filename in upload card
+  const pdfFile = document.getElementById('pdfFile');
+  const fileName = document.getElementById('fileName');
+  if (pdfFile) {
+    pdfFile.addEventListener('change', () => {
+      if (pdfFile.files.length) {
+        fileName.textContent = pdfFile.files[0].name;
+        fileName.style.display = 'block';
+      }
+    });
+  }
+
+  // Auto-scroll chat to latest message on load
+  const chatContainer = document.getElementById('chatContainer');
+  if (chatContainer) {
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+
+  // Suggestion cards just prefill the chat input (frontend-only convenience)
+  document.querySelectorAll('.suggest-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const input = document.getElementById('userInput');
+      if (input) {
+        input.value = card.textContent.trim();
+        input.focus();
+      }
+    });
+  });
+</script>
 
 </body>
 </html>

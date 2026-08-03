@@ -1,70 +1,330 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Login</title>
-    <style>
-        body{
-            font-family: Arial, sans-serif;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            height:100vh;
-            background:#f4f4f4;
-        }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Login — ContextIQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#05080f; --fg:#e8eefc; --muted:#93a4c4;
+  --blue:#3b82f6; --cyan:#22d3ee;
+  --glass:rgba(255,255,255,.045); --glass-border:rgba(255,255,255,.10);
+  --radius:20px; --grad:linear-gradient(135deg,var(--blue),var(--cyan));
+  --danger:#f87171;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--fg);font-family:'Inter',system-ui,sans-serif;line-height:1.6;
+  min-height:100vh;overflow-x:hidden;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;
+}
+h1,h2,h3,.brand{font-family:'Space Grotesk',sans-serif;line-height:1.15;letter-spacing:-.02em}
+a{text-decoration:none;color:inherit}
 
-        .form-box{
-            background:white;
-            padding:30px;
-            border-radius:10px;
-            width:350px;
-            box-shadow:0px 0px 10px rgba(0,0,0,0.2);
-        }
+/* Animated background */
+body::before{
+  content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:
+    radial-gradient(60rem 40rem at 15% -10%,rgba(59,130,246,.22),transparent 60%),
+    radial-gradient(50rem 35rem at 90% 5%,rgba(34,211,238,.16),transparent 60%),
+    radial-gradient(45rem 35rem at 50% 110%,rgba(59,130,246,.14),transparent 60%);
+  animation:drift 16s ease-in-out infinite alternate;
+}
+@keyframes drift{
+  0%{background-position:0% 0%,0% 0%,0% 0%}
+  100%{background-position:4% 3%,-3% -4%,3% -3%}
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(35rem 25rem at 50% 45%,rgba(34,211,238,.10),transparent 70%);
+  animation:pulseGlow 6s ease-in-out infinite;
+}
+@keyframes pulseGlow{0%,100%{opacity:.6}50%{opacity:1}}
 
-        input{
-            width:100%;
-            padding:10px;
-            margin:10px 0;
-        }
+/* Card */
+.auth-wrap{
+  width:100%;max-width:420px;position:relative;
+  animation:fadeIn .8s cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(18px)}
+  to{opacity:1;transform:none}
+}
+.glow{
+  position:absolute;inset:-40px;z-index:-1;
+  background:radial-gradient(60% 60% at 50% 30%,rgba(34,211,238,.28),transparent 70%);
+  filter:blur(10px);
+  animation:pulseGlow 5s ease-in-out infinite;
+}
 
-        button{
-            width:100%;
-            padding:10px;
-            background:#007bff;
-            color:white;
-            border:none;
-            cursor:pointer;
-        }
+.form-box{
+  background:var(--glass);
+  border:1px solid var(--glass-border);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+  border-radius:calc(var(--radius) + 6px);
+  padding:42px 36px 34px;
+  box-shadow:0 25px 60px rgba(3,10,25,.65);
+}
 
-        button:hover{
-            background:#0056b3;
-        }
-    </style>
+.brand-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:22px}
+.logo{
+  width:44px;height:44px;border-radius:13px;background:var(--grad);
+  display:grid;place-items:center;font-size:1.25rem;color:#04101d;
+  box-shadow:0 10px 28px rgba(34,211,238,.35);
+}
+.brand-name{font-weight:700;font-size:1.1rem}
+
+.form-box h2{
+  text-align:center;font-size:1.7rem;font-weight:700;margin-bottom:8px;
+}
+.subtitle{
+  text-align:center;color:var(--muted);font-size:.93rem;margin-bottom:30px;
+}
+
+.flash{
+  background:rgba(248,113,113,.10);
+  border:1px solid rgba(248,113,113,.35);
+  color:#fca5a5;
+  padding:11px 14px;
+  border-radius:12px;
+  font-size:.86rem;
+  margin-bottom:18px;
+  display:flex;align-items:center;gap:8px;
+  animation:fadeIn .4s ease both;
+}
+.flash svg{flex:none}
+
+.field{position:relative;margin-bottom:22px}
+.field input{
+  width:100%;
+  padding:18px 16px 8px;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--glass-border);
+  border-radius:12px;
+  color:var(--fg);
+  font-family:'Inter',sans-serif;
+  font-size:.98rem;
+  outline:none;
+  transition:border-color .25s,box-shadow .25s,background .25s;
+}
+.field input::placeholder{color:transparent}
+.field label{
+  position:absolute;
+  left:16px;
+  top:17px;
+  color:var(--muted);
+  font-size:.98rem;
+  pointer-events:none;
+  transition:all .2s ease;
+  background:transparent;
+}
+.field input:focus{
+  border-color:rgba(34,211,238,.55);
+  background:rgba(34,211,238,.04);
+  box-shadow:0 0 0 4px rgba(34,211,238,.10);
+}
+.field input:focus + label,
+.field input:not(:placeholder-shown) + label{
+  top:7px;
+  font-size:.72rem;
+  color:var(--cyan);
+  letter-spacing:.02em;
+}
+.field.password input{padding-right:46px}
+.toggle-pass{
+  position:absolute;
+  right:14px;
+  top:16px;
+  background:none;
+  border:none;
+  color:var(--muted);
+  cursor:pointer;
+  padding:4px;
+  display:grid;
+  place-items:center;
+  transition:color .2s;
+}
+.toggle-pass:hover{color:var(--cyan)}
+.toggle-pass svg{width:19px;height:19px}
+
+.field input:invalid:not(:placeholder-shown):not(:focus){
+  border-color:rgba(248,113,113,.55);
+}
+.error-msg{
+  display:none;
+  align-items:center;
+  gap:6px;
+  color:var(--danger);
+  font-size:.78rem;
+  margin-top:7px;
+  padding-left:2px;
+}
+.field input:invalid:not(:placeholder-shown):not(:focus) ~ .error-msg{
+  display:flex;
+}
+
+.btn-login{
+  width:100%;
+  padding:15px;
+  border:none;
+  border-radius:12px;
+  background:var(--grad);
+  color:#04101d;
+  font-family:'Inter',sans-serif;
+  font-weight:600;
+  font-size:1rem;
+  cursor:pointer;
+  margin-top:6px;
+  box-shadow:0 10px 30px rgba(34,211,238,.25);
+  transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s,filter .2s;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  position:relative;
+}
+.btn-login:hover{
+  transform:translateY(-2px);
+  box-shadow:0 16px 40px rgba(34,211,238,.4);
+}
+.btn-login:active{transform:translateY(0)}
+.btn-login:disabled{cursor:not-allowed;filter:saturate(.7)}
+
+.spinner{
+  width:17px;height:17px;
+  border:2px solid rgba(4,16,29,.3);
+  border-top-color:#04101d;
+  border-radius:50%;
+  display:none;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn-login.loading .btn-text{opacity:.85}
+.btn-login.loading .spinner{display:inline-block}
+
+.links{
+  margin-top:26px;
+  text-align:center;
+  font-size:.9rem;
+  color:var(--muted);
+}
+.links a{
+  color:var(--cyan);
+  font-weight:600;
+  transition:opacity .2s;
+}
+.links a:hover{opacity:.8}
+
+.back-home{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  margin-top:18px;
+  font-size:.86rem;
+  color:var(--muted);
+  transition:color .2s,transform .2s;
+}
+.back-home:hover{color:var(--fg);transform:translateX(-2px)}
+
+@media(max-width:480px){
+  .form-box{padding:32px 22px 28px}
+}
+</style>
 </head>
 <body>
 
-<div class="form-box">
-    <h2>Login</h2>
+<div class="auth-wrap">
+  <div class="glow"></div>
+  <div class="form-box">
 
-    <form method="POST">
+    <div class="brand-row">
+      <span class="logo">◆</span>
+      <span class="brand-name">ContextIQ</span>
+    </div>
 
+    <h2>Welcome Back</h2>
+    <p class="subtitle">Sign in to continue chatting with your AI assistant.</p>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="flash">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" id="loginForm">
+
+      <div class="field">
         <input type="email"
                name="email"
-               placeholder="Email"
+               id="email"
+               placeholder=" "
                required>
+        <label for="email">Email</label>
+      </div>
 
+      <div class="field password">
         <input type="password"
                name="password"
-               placeholder="Password"
+               id="password"
+               placeholder=" "
                required>
+        <label for="password">Password</label>
+        <button type="button" class="toggle-pass" id="togglePass" aria-label="Show password">
+          <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+        <div class="error-msg">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Please enter your password
+        </div>
+      </div>
 
-        <button type="submit">Login</button>
+      <button type="submit" class="btn-login" id="loginBtn">
+        <span class="btn-text">Login</span>
+        <span class="spinner"></span>
+      </button>
 
     </form>
 
-    <p>Don't have an account?</p>
-    <a href="/signup">Signup</a>
+    <p class="links">Don't have an account? <a href="/signup">Sign Up</a></p>
+    <a href="/" class="back-home">← Back to Home</a>
 
+  </div>
 </div>
+
+<script>
+  const togglePass = document.getElementById('togglePass');
+  const password = document.getElementById('password');
+  const eyeIcon = document.getElementById('eyeIcon');
+
+  togglePass.addEventListener('click', () => {
+    const isHidden = password.type === 'password';
+    password.type = isHidden ? 'text' : 'password';
+    togglePass.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+    eyeIcon.innerHTML = isHidden
+      ? '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.6 21.6 0 0 1 5.06-6.06M9.9 4.24A10.6 10.6 0 0 1 12 4c7 0 11 8 11 8a21.6 21.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+      : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  });
+
+  const form = document.getElementById('loginForm');
+  const loginBtn = document.getElementById('loginBtn');
+
+  form.addEventListener('submit', () => {
+    if (form.checkValidity()) {
+      loginBtn.classList.add('loading');
+      loginBtn.disabled = true;
+    }
+  });
+</script>
 
 </body>
 </html>

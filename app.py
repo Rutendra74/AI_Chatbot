@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect,url_for,make_response
+from flask import Flask, render_template, request, redirect,url_for,make_response,flash
 from langchain_ollama import OllamaLLM
 from werkzeug.security import check_password_hash,generate_password_hash
 from langchain_core.prompts import ChatPromptTemplate
@@ -61,7 +61,8 @@ def signup():
         password=request.form['password']
         username=request.form['username']
         if not email or not password:
-            return render_template('signup.html',error='All Fields are Required!!')
+            flash('All Fields are Required!!')
+            return render_template('signup.html',error='All Fields are Required')
         hash_password=generate_password_hash(password)
         conn=sqlite3.connect('user.db')
         cursor=conn.cursor()
@@ -69,14 +70,9 @@ def signup():
         user=cursor.fetchone()
         if user is not None:
             conn.close()
-            return render_template('signup.html',error='User Already Exist')
-        cursor.execute('SELECT id from users WHERE username=?',(username,))
-        user_id=cursor.fetchone()
-        if user_id is not None:
-            conn.close()
+            flash('User Already Exist')
             return render_template('signup.html',error='Username Already Exist!')
-            
-
+        cursor.execute('SELECT id from users WHERE username=?',(username,))    
         cursor.execute('INSERT INTO users(username,email,password_hash) VALUES (?,?,?)',(username,email,hash_password))
         conn.commit()
         conn.close()
@@ -98,9 +94,11 @@ def login():
         conn.close()
 
         if user is None:
+            flash('Account not Found! please SignUp')
             return render_template('login.html',error='Account not found! Please signup')
         user_id,password_hash=user
         if not check_password_hash(password_hash,password):
+            flash('Invalid Password')
             return render_template('login.html',error='Invalid password')
         access_token = create_access_token(identity=str(user_id))
         response=redirect('/chat')
