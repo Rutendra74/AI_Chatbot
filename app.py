@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect,url_for,make_response,flash
+from flask import Flask, render_template, request, redirect,url_for,make_response,flash,Response
 from langchain_ollama import OllamaLLM
 from werkzeug.security import check_password_hash,generate_password_hash
 from langchain_core.prompts import ChatPromptTemplate
@@ -31,6 +31,7 @@ app.config['JWT_SECRET_KEY']=os.getenv('JWT_SECRET_KEY')
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_COOKIE_CSRF_PROTECT"] = False
 jwt=JWTManager(app)
+TOP_K = int(os.getenv("TOP_K", 5))
 
 template = """
 You are a helpful AI assistant.
@@ -111,7 +112,6 @@ def logout():
     response=redirect(url_for('login'))
     unset_jwt_cookies(response)
     return response
-
 def process_pdf(document_id,path):
     pdf=PdfReader(path)
     content=''
@@ -127,19 +127,52 @@ def process_pdf(document_id,path):
     index=faiss.IndexFlatL2(dimension)
     index.add(embedding)
     os.makedirs("vector_store", exist_ok=True)
-
+    
     faiss.write_index(
     index,
     f"vector_store/{document_id}.index"
     )
     with open(f"vector_store/{document_id}_chunks.pkl", "wb") as file:
         pickle.dump(texts, file)
-def answer_question(document_id,question):
-    index=faiss.read_index(f'vector_store/{document_id}.index')
-    with open(f'vector_store/{document_id}_chunks.pkl','rb') as file:
-        texts=pickle.load(file)
+loaded_index,loaded_chunks={},{}
+#cache for FAISS index and document chunks to remove the task everytime
+def answer_question_stream(document_id, question):
+    if document_id not in loaded_index:
+        loaded_index[document_id] = faiss.read_index(
+        f"vector_store/{document_id}.index"
+    )
+    if document_id not in loaded_chunks:
+        with open(f"vector_store/{document_id}_chunks.pkl", "rb") as f:
+            loaded_chunks[document_id] = pickle.load(f)
+
+    index = loaded_index[document_id]
+    texts = loaded_chunks[document_id]
     query_embed=embed_model.encode([question])
-    distance,indices=index.search(query_embed,k=3)
+    distance,indices=index.search(query_embed,k=TOP_K)    
+    retrieve_chunk=[texts[i] for i in indices[0] if i!=-1]
+    context='\n\n'.join(retrieve_chunk)
+    for chunk in chain.stream(
+    {
+        "context": context,
+        "question": question
+    }
+):
+        yield chunk
+    
+
+def answer_question(document_id,question):
+    if document_id not in loaded_index:
+        loaded_index[document_id] = faiss.read_index(
+        f"vector_store/{document_id}.index"
+    )
+    if document_id not in loaded_chunks:
+        with open(f"vector_store/{document_id}_chunks.pkl", "rb") as f:
+            loaded_chunks[document_id] = pickle.load(f)
+
+    index = loaded_index[document_id]
+    texts = loaded_chunks[document_id]
+    query_embed=embed_model.encode([question])
+    distance,indices=index.search(query_embed,k=TOP_K)    
     retrieve_chunk=[texts[i] for i in indices[0] if i!=-1]
     context='\n\n'.join(retrieve_chunk)
     response = chain.invoke(
@@ -149,6 +182,8 @@ def answer_question(document_id,question):
     }
 )
     return response
+
+
 
 @app.route('/upload',methods=['POST'])
 @jwt_required()
@@ -181,12 +216,26 @@ def home():
 @jwt_required()
 def index():
     user_id = get_jwt_identity()
-
+    document_id=None
+    filename=None
     conn = sqlite3.connect("user.db")
     cursor = conn.cursor()
+    cursor.execute(
+            """
+            SELECT id,document_name
+            FROM document
+            WHERE user_id=?
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            (user_id,)
+        )
+    document = cursor.fetchone()
+    if document:
+        document_id=document[0]
+        filename=document[1]
 
     bot_result = ""
-
     if request.method == "POST":
         user_message = request.form["user_input"]
 
@@ -195,19 +244,9 @@ def index():
             "INSERT INTO messages(user_id, role, content) VALUES (?,?,?)",
             (user_id, "User", user_message)
         )
-        cursor.execute(
-            """
-            SELECT id
-            FROM document
-            WHERE user_id=?
-            ORDER BY id DESC
-            LIMIT 1
-            """,
-            (user_id,)
-        )
-        document = cursor.fetchone()
-        if document:
-            document_id = document[0]
+        
+        
+        if document_id is not None:
             result = answer_question(document_id, user_message)
         else:
             result = "Please upload a PDF before asking questions."
@@ -228,24 +267,87 @@ def index():
         """,
         (user_id,)
     )
-
+    
     rows = cursor.fetchall()
-
+    
+    cursor.execute('SELECT username FROM users WHERE id=?',(user_id,))
+    username=cursor.fetchone()[0]
     conn.close()
 
     response = make_response(
     render_template(
         "index.html",
         response=bot_result,
-        rows=rows
+        rows=rows,
+        filename=filename,
+        username=username
     )
 )
 
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
-
+    response.headers["Expires"] = "0"    
     return response
+@app.route("/chat/stream", methods=["POST"])
+@jwt_required()
+def chat_stream():
+    user_id = get_jwt_identity()
+    user_message = request.form["user_input"]
+
+    # First connection: only to fetch document_id
+    conn = sqlite3.connect("user.db")
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT id
+        FROM document
+        WHERE user_id=?
+        ORDER BY id DESC
+        LIMIT 1
+        """,
+        (user_id,)
+    )
+
+    document = cursor.fetchone()
+    conn.close()          # <-- close it immediately
+
+    if not document:
+        return Response(
+            "Please upload a PDF before asking questions.",
+            mimetype="text/plain"
+        )
+
+    document_id = document[0]
+
+    def generate():
+
+        # Second connection: only for saving messages
+        conn = sqlite3.connect("user.db")
+        cursor = conn.cursor()
+
+        full_response = ""
+
+        for chunk in answer_question_stream(document_id, user_message):
+            full_response += chunk
+            yield chunk
+
+        cursor.execute(
+            "INSERT INTO messages(user_id, role, content) VALUES (?,?,?)",
+            (user_id, "User", user_message)
+        )
+
+        cursor.execute(
+            "INSERT INTO messages(user_id, role, content) VALUES (?,?,?)",
+            (user_id, "AI", full_response)
+        )
+
+        conn.commit()
+        conn.close()
+
+    return Response(
+        generate(),
+        mimetype="text/plain")
 @jwt.unauthorized_loader
 def unauthorized_callback(reason):
     return redirect(url_for("login"))

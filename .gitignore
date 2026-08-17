@@ -12,3 +12,5 @@ venv/
 user.db
 vector_store/
 uploads/
+postman/
+.postman/

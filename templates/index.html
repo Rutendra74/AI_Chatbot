@@ -95,7 +95,8 @@ body::before{
   color:var(--cyan);
   margin-top:8px;
   word-break:break-all;
-  display:none;
+  text-overflow: ellipsis;
+  
 }
 .btn-upload{
   width:100%;
@@ -315,6 +316,15 @@ body::before{
     cursor:pointer;
     font-size:1.1rem;
   }
+  .current-document{
+    margin:12px 0 20px;
+    padding:12px;
+    border-radius:10px;
+    background:#222c40;
+    color:var(--cyan);
+    font-size:0.85rem;
+    word-break:break-word;
+}
 }
 @media(min-width:901px){
   .mobile-topbar{display:none}
@@ -354,7 +364,10 @@ body::before{
                    accept=".pdf"
                    required
                    id="pdfFile">
-            <div class="file-name" id="fileName"></div>
+            <div class="sidebar-label">Active Knowledge Base</div>
+            <div class="file-name" id="fileName" {% if not filename %}style="display:none"{% endif %}>
+                {{ filename }}
+            </div>
         </div>
 
         <button type="submit" class="btn-upload">📄 Upload Knowledge Base</button>
@@ -384,7 +397,7 @@ body::before{
     </div>
 
     
-    <div class="chat-container" id="chatContainer">
+    <div class="chat-container" id="chatContainer" data-username="{{ username }}">
 
       {% if rows %}
         {% for role, message in rows %}
@@ -392,7 +405,7 @@ body::before{
             {% if role=="User" %}
                 <div class="msg-row user">
                     <div class="bubble">
-                        <span class="role-tag">{{ role }}</span>
+                        <span class="role-tag">{{ username }}</span>
                         {{ message }}
                     </div>
                 </div>
@@ -484,6 +497,127 @@ body::before{
       }
     });
   });
+//-------Stream Response------
+const chatForm = document.getElementById("chatForm");
+let isGenerating = false;
+
+chatForm.addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    if (isGenerating) {
+        console.log("Blocked");
+        return;
+    }
+
+    const chatContainer = document.getElementById("chatContainer");
+    const username = chatContainer.dataset.username;
+    const userInput = document.getElementById("userInput");
+    const sendButton = chatForm.querySelector("button[type='submit']");
+
+    const question = userInput.value.trim();
+
+    if (!question) return;
+
+    console.log("Allowed");
+    isGenerating = true;
+
+    const formData = new FormData();
+    formData.append("user_input", question);
+
+    // Remove empty state if it exists
+    const emptyState = chatContainer.querySelector(".empty-state");
+    if (emptyState) {
+        emptyState.remove();
+    }
+
+    // =========================
+    // Create USER message
+    // =========================
+    const userRow = document.createElement("div");
+    userRow.classList.add("msg-row", "user");
+
+    const userBubble = document.createElement("div");
+    userBubble.classList.add("bubble");
+    
+    const userRole = document.createElement("span");
+    userRole.classList.add("role-tag");
+    userRole.textContent = username;
+
+    userBubble.appendChild(userRole);
+    userBubble.appendChild(document.createTextNode(question));
+
+    userRow.appendChild(userBubble);
+    chatContainer.appendChild(userRow);
+
+    // =========================
+    // Create AI message
+    // =========================
+    const aiRow = document.createElement("div");
+    aiRow.classList.add("msg-row", "ai");
+
+    const aiBubble = document.createElement("div");
+    aiBubble.classList.add("bubble");
+
+    const aiRole = document.createElement("span");
+    aiRole.classList.add("role-tag");
+    aiRole.textContent = "AI";
+
+    const aiText = document.createElement("span");
+
+    aiBubble.appendChild(aiRole);
+    aiBubble.appendChild(aiText);
+
+    aiRow.appendChild(aiBubble);
+    chatContainer.appendChild(aiRow);
+
+    // Clear input
+    userInput.value = "";
+
+    // Disable button
+    sendButton.disabled = true;
+    sendButton.style.opacity = "0.5";
+    sendButton.style.cursor = "not-allowed";
+
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    try {
+        const response = await fetch("/chat/stream", {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) break;
+
+            aiText.textContent += decoder.decode(value, { stream: true });
+
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Flush remaining decoder data
+        aiText.textContent += decoder.decode();
+
+    } catch (error) {
+        console.error(error);
+        aiText.textContent = "Something went wrong.";
+
+    } finally {
+        isGenerating = false;
+
+        sendButton.disabled = false;
+        sendButton.style.opacity = "1";
+        sendButton.style.cursor = "pointer";
+    }
+});
 </script>
 
 </body>
