@@ -201,18 +201,6 @@ This allows the Dockerized application to use the Ollama instance running on the
 
 ------------------------------------------------------------------------
 
-## 💡 How It Works
-
-1.  Register or log in.
-2.  Upload a PDF document.
-3.  The application extracts and chunks the text.
-4.  Embeddings are generated using Sentence Transformers.
-5.  Chunks are indexed in FAISS.
-6.  Ask questions about the uploaded document.
-7.  Relevant chunks are retrieved and provided to Ollama for grounded
-    responses.
-
-------------------------------------------------------------------------
 ## 📸 Screenshots
 
 ### home
