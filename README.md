@@ -7,6 +7,7 @@ content. The application uses **Sentence Transformers** for embeddings,
 generate context-aware answers through a secure Flask web application.
 The application is fully **Dockerized** with persistent storage for uploaded 
 documents, FAISS vector indexes, and SQLite-based user and chat data.
+
 ------------------------------------------------------------------------
 
 ## ✨ Features
@@ -33,18 +34,19 @@ documents, FAISS vector indexes, and SQLite-based user and chat data.
 
 ## 🛠️ Tech Stack
 
-  Category         Technologies
-  ---------------- -----------------------
-  Backend          Flask, Python
-  Database         SQLite
-  Authentication   Flask-JWT-Extended
-  AI               Ollama, Llama 3.2
-  Embeddings       Sentence Transformers
-  Vector Store     FAISS
-  PDF Processing   PyPDF2
-  Security         Flask-Limiter
-  Frontend         HTML, CSS , JavaScript
-  Containerization Docker
+| Category | Technologies |
+|---|---|
+| Backend | Flask, Python |
+| Database | SQLite, SQLAlchemy |
+| Authentication | Flask-JWT-Extended |
+| AI | Ollama, Llama 3.2 |
+| RAG | LangChain |
+| Embeddings | Sentence Transformers |
+| Vector Store | FAISS |
+| PDF Processing | pypdf |
+| Security | Flask-Limiter |
+| Containerization | Docker |
+| Frontend | HTML, CSS, JavaScript |
 
 ---------------------------------------------------------------------------
 
@@ -77,6 +79,7 @@ documents, FAISS vector indexes, and SQLite-based user and chat data.
                  ▼
             Generated Answer(Stream Response)
 ```
+```
 Docker Architecture
                     Docker Container
                   ┌───────────────────┐
@@ -98,6 +101,7 @@ Docker Architecture
                             ▼
                    Windows Host Ollama
                        :11434
+```
 
 ------------------------------------------------------------------------
 
@@ -160,7 +164,8 @@ Build the Docker Image
 
 From the project root:
 
-```docker build -t contextiq .
+```
+docker build -t contextiq .
 ```
 Run the Container
 
@@ -168,7 +173,8 @@ The application uses runtime environment variables and persistent bind mounts fo
 
 For PowerShell:
 
-```docker run --env-file .env `
+```
+docker run --env-file .env `
   --mount type=bind,source="${PWD}\uploads",target=/app/uploads `
   --mount type=bind,source="${PWD}\vector_store",target=/app/vector_store `
   --mount type=bind,source="${PWD}\user.db",target=/app/user.db `
@@ -176,7 +182,8 @@ For PowerShell:
 ```
 Open:
 
-```http://localhost:5000
+```
+http://localhost:5000
 ```
 Ollama with Docker
 
