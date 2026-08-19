@@ -1,4 +1,4 @@
-# 🤖 ContextIQ – AI-powered document intelligence platform using Flask, RAG, FAISS, and secure authentication.
+# 🤖 ContextIQ – AI-powered document intelligence platform using Flask, RAG, FAISS, Docker and secure authentication.
 
 An AI-powered **Retrieval-Augmented Generation (RAG)** chatbot that
 allows users to upload PDF documents and ask questions grounded in their
@@ -6,6 +6,8 @@ content. The application uses **Sentence Transformers** for embeddings,
 **FAISS** for vector similarity search, and **Ollama (Llama 3.2)** to
 generate context-aware answers through a secure Flask web application.
 
+The application is fully **Dockerized** with persistent storage for uploaded 
+documents, FAISS vector indexes, and SQLite-based user and chat data.
 ------------------------------------------------------------------------
 
 ## ✨ Features
@@ -18,10 +20,15 @@ generate context-aware answers through a secure Flask web application.
 -   ⚡ FAISS vector database for semantic search
 -   🤖 Ollama (Llama 3.2) integration
 -   💬 Retrieval-Augmented Generation (RAG)
+-   🌊 Streaming AI responses
 -   🛡️ Flask-Limiter rate limiting
 -   🗄️ SQLite database
+-   💾 Persistent document and vector-store storage
+-   🐳 Dockerized application
+-   🔑 Environment-based configuration using .env
 -   🎯 Answers based only on uploaded document context
 -   🌙 Modern Dark Theme
+
 
 ------------------------------------------------------------------------
 
@@ -38,7 +45,7 @@ generate context-aware answers through a secure Flask web application.
   PDF Processing   PyPDF2
   Security         Flask-Limiter
   Frontend         HTML, CSS , JavaScript
-
+  Containerization Docker
 ------------------------------------------------------------------------
 
 ## 🏗️ System Architecture
@@ -68,9 +75,29 @@ generate context-aware answers through a secure Flask web application.
          Ollama (Llama 3.2)
                  │
                  ▼
-            Generated Answer
+            Generated Answer(Stream Response)
 ```
-
+Docker Architecture
+                    Docker Container
+                  ┌───────────────────┐
+                  │     ContextIQ     │
+                  │                   │
+                  │ Flask Application │
+                  │ Python Dependencies│
+                  │ RAG + FAISS       │
+                  └─────────┬─────────┘
+                            │
+             ┌──────────────┼──────────────┐
+             │              │              │
+             ▼              ▼              ▼
+          user.db        uploads/      vector_store/
+             │              │              │
+             └──────────────┴──────────────┘
+                  Persistent Bind Mounts
+                            │
+                            ▼
+                   Windows Host Ollama
+                       :11434
 ------------------------------------------------------------------------
 
 ## 📂 Project Structure
@@ -80,12 +107,15 @@ AI_Chatbot/
 │── app.py
 │── database.py
 │── main.py
+|── .dockerignore
+|── Dockerfile
 │── requirements.txt
 │── templates/
 │── static/
 │── uploads/
 │── vector_store/
 └── README.md
+
 ```
 
 ------------------------------------------------------------------------
@@ -120,7 +150,46 @@ Open:
 ``` text
 http://127.0.0.1:5000
 ```
+------------------------------------------------------------------------
+🐳 Docker Setup
 
+ContextIQ can also be run inside a Docker container.
+
+Build the Docker Image
+
+From the project root:
+
+```docker build -t contextiq .
+```
+Run the Container
+
+The application uses runtime environment variables and persistent bind mounts for the SQLite database, uploaded documents, and FAISS vector store.
+
+For PowerShell:
+
+```docker run --env-file .env `
+  --mount type=bind,source="${PWD}\uploads",target=/app/uploads `
+  --mount type=bind,source="${PWD}\vector_store",target=/app/vector_store `
+  --mount type=bind,source="${PWD}\user.db",target=/app/user.db `
+  -p 5000:5000 contextiq
+```
+Open:
+
+```http://localhost:5000
+```
+Ollama with Docker
+
+Ollama runs on the host machine while ContextIQ runs inside the Docker container.
+
+The container communicates with Ollama through:
+```
+http://host.docker.internal:11434
+```
+The endpoint is configured through:
+```
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+```
+This allows the Dockerized application to use the Ollama instance running on the host machine.
 ------------------------------------------------------------------------
 
 ## 💡 How It Works
@@ -154,13 +223,18 @@ http://127.0.0.1:5000
 ![Chat](screenshot/polishedchatbot.png)
 ------------------------------------------------------------------------
 
-## 🔮 Future Improvements
-
--   Conversation memory
--   Streaming responses
--   Docker deployment
--   Cloud vector database
--   Role-based access control
+## 💡 How It Works
+- Register or log in.
+- Upload a PDF document.
+- The application extracts and chunks the text.
+- Embeddings are generated using Sentence Transformers.
+- Chunks are indexed in FAISS.
+- Ask questions about the uploaded document.
+- Relevant chunks are retrieved using semantic similarity.
+- Retrieved context is provided to Ollama.
+- Ollama generates a grounded response.
+- The response is streamed back to the user.
+- Chat history is persisted in SQLite.
 
 ------------------------------------------------------------------------
 
