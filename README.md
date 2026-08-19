@@ -111,7 +111,6 @@ Docker Architecture
 AI_Chatbot/
 │── app.py
 │── database.py
-│── main.py
 |── .dockerignore
 |── Dockerfile
 │── requirements.txt
