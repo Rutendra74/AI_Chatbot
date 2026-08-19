@@ -51,7 +51,7 @@ Question:
 
 Answer:
 """
-model = OllamaLLM(model="llama3.2")
+model = OllamaLLM(model="llama3.2",base_url=os.getenv("OLLAMA_BASE_URL"))
 prompt = ChatPromptTemplate.from_template(template)
 chain = prompt | model
 embed_model=SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
@@ -361,4 +361,4 @@ def expired_token_callback(jwt_header, jwt_payload):
     return redirect(url_for("login"))
 if __name__ == "__main__":
     
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000,debug=True)
