@@ -237,6 +237,14 @@ This allows the Dockerized application to use the Ollama instance running on the
 - Chat history is persisted in SQLite.
 
 ------------------------------------------------------------------------
+## 🔮 Future Improvements
+- 🚀 Production deployment
+- 🌐 Cloud deployment
+- 📊 Monitoring and logging
+- 🔐 Role-based access control
+- 🐳 Docker Compose configuration
+- ⚙️ Production WSGI server
+------------------------------------------------------------------------
 
 ## 👨‍💻 Author
 
