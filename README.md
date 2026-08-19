@@ -5,7 +5,6 @@ allows users to upload PDF documents and ask questions grounded in their
 content. The application uses **Sentence Transformers** for embeddings,
 **FAISS** for vector similarity search, and **Ollama (Llama 3.2)** to
 generate context-aware answers through a secure Flask web application.
-
 The application is fully **Dockerized** with persistent storage for uploaded 
 documents, FAISS vector indexes, and SQLite-based user and chat data.
 ------------------------------------------------------------------------
@@ -46,7 +45,8 @@ documents, FAISS vector indexes, and SQLite-based user and chat data.
   Security         Flask-Limiter
   Frontend         HTML, CSS , JavaScript
   Containerization Docker
-------------------------------------------------------------------------
+
+---------------------------------------------------------------------------
 
 ## 🏗️ System Architecture
 
@@ -98,6 +98,7 @@ Docker Architecture
                             ▼
                    Windows Host Ollama
                        :11434
+
 ------------------------------------------------------------------------
 
 ## 📂 Project Structure
@@ -190,6 +191,7 @@ The endpoint is configured through:
 OLLAMA_BASE_URL=http://host.docker.internal:11434
 ```
 This allows the Dockerized application to use the Ollama instance running on the host machine.
+
 ------------------------------------------------------------------------
 
 ## 💡 How It Works
@@ -221,6 +223,7 @@ This allows the Dockerized application to use the Ollama instance running on the
 ### Chat Interface
 
 ![Chat](screenshot/polishedchatbot.png)
+
 ------------------------------------------------------------------------
 
 ## 💡 How It Works
