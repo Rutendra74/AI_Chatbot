@@ -1,12 +1,10 @@
 # 🤖 ContextIQ – AI-powered document intelligence platform using Flask, RAG, FAISS, Docker and secure authentication.
 
-An AI-powered **Retrieval-Augmented Generation (RAG)** chatbot that
-allows users to upload PDF documents and ask questions grounded in their
-content. The application uses **Sentence Transformers** for embeddings,
-**FAISS** for vector similarity search, and **Ollama (Llama 3.2)** to
-generate context-aware answers through a secure Flask web application.
-The application is fully **Dockerized** with persistent storage for uploaded 
-documents, FAISS vector indexes, and SQLite-based user and chat data.
+An AI-powered **Retrieval-Augmented Generation (RAG)** chatbot that allows users to upload PDF documents and ask questions grounded in their content.
+
+The application uses **Sentence Transformers** for embeddings, **FAISS** for vector similarity search, and the **Groq API** with **OpenAI GPT-OSS 20B** to generate fast, context-aware answers through a secure Flask web application.
+
+The application is fully **Dockerized** with persistent storage for uploaded documents, FAISS vector indexes, and SQLite-based user and chat data.
 
 ------------------------------------------------------------------------
 
@@ -18,7 +16,7 @@ documents, FAISS vector indexes, and SQLite-based user and chat data.
 -   ✂️ Recursive text chunking
 -   🧠 SentenceTransformer embeddings
 -   ⚡ FAISS vector database for semantic search
--   🤖 Ollama (Llama 3.2) integration
+-   🤖 Groq API with OpenAI GPT-OSS 20B
 -   💬 Retrieval-Augmented Generation (RAG)
 -   🌊 Streaming AI responses
 -   🛡️ Flask-Limiter rate limiting
@@ -39,7 +37,7 @@ documents, FAISS vector indexes, and SQLite-based user and chat data.
 | Backend | Flask, Python |
 | Database | SQLite, SQLAlchemy |
 | Authentication | Flask-JWT-Extended |
-| AI | Ollama, Llama 3.2 |
+| AI | Groq API, OpenAI GPT-OSS 20B |
 | RAG | LangChain |
 | Embeddings | Sentence Transformers |
 | Vector Store | FAISS |
@@ -74,7 +72,7 @@ documents, FAISS vector indexes, and SQLite-based user and chat data.
       Retrieve Relevant Chunks
                  │
                  ▼
-         Ollama (Llama 3.2)
+         Groq API (GPT-OSS 20B)
                  │
                  ▼
             Generated Answer(Stream Response)
@@ -87,7 +85,8 @@ Docker Architecture
                   │                   │
                   │ Flask Application │
                   │ Python Dependencies│
-                  │ RAG + FAISS       │
+                  │ RAG + FAISS       |
+                  |  ChatGroq         |
                   └─────────┬─────────┘
                             │
              ┌──────────────┼──────────────┐
@@ -99,8 +98,11 @@ Docker Architecture
                   Persistent Bind Mounts
                             │
                             ▼
-                   Windows Host Ollama
-                       :11434
+                      Host/ Volume
+                            |
+                            | HTTPS API
+                            ▼
+                       Groq API(GPT-OSS 20B)
 ```
 
 ------------------------------------------------------------------------
@@ -136,11 +138,14 @@ chatbot\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Start Ollama and pull the model:
+Configure Groq
 
-``` bash
-ollama pull llama3.2
-ollama serve
+Get your API key from the Groq Console.
+
+Create a .env file in the project root:
+
+```
+GROQ_API_KEY=your_groq_api_key
 ```
 
 Run the application:
@@ -184,19 +189,8 @@ Open:
 ```
 http://localhost:5000
 ```
-Ollama with Docker
-
-Ollama runs on the host machine while ContextIQ runs inside the Docker container.
-
-The container communicates with Ollama through:
-```
-http://host.docker.internal:11434
-```
-The endpoint is configured through:
-```
-OLLAMA_BASE_URL=http://host.docker.internal:11434
-```
-This allows the Dockerized application to use the Ollama instance running on the host machine.
+The GROQ_API_KEY is supplied to the container at runtime through the .env file. 
+The API key is not included in the Docker image.
 
 ------------------------------------------------------------------------
 
@@ -228,8 +222,8 @@ This allows the Dockerized application to use the Ollama instance running on the
 - Chunks are indexed in FAISS.
 - Ask questions about the uploaded document.
 - Relevant chunks are retrieved using semantic similarity.
-- Retrieved context is provided to Ollama.
-- Ollama generates a grounded response.
+- The retrieved context and question are sent to the Groq API.
+- GPT-OSS 20B generates a grounded response.
 - The response is streamed back to the user.
 - Chat history is persisted in SQLite.
 
