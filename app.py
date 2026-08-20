@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect,url_for,make_response,flash,Response
-from langchain_ollama import OllamaLLM
+from langchain_groq import ChatGroq
 from werkzeug.security import check_password_hash,generate_password_hash
 from langchain_core.prompts import ChatPromptTemplate
 import sqlite3
@@ -19,6 +19,7 @@ import faiss
 import pickle
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+import time
 load_dotenv()
 app = Flask(__name__)
 limiter = Limiter(
@@ -36,10 +37,12 @@ TOP_K = int(os.getenv("TOP_K", 5))
 template = """
 You are a helpful AI assistant.
 
-Use ONLY the provided context to answer the question.
+If the user is making a casual conversational request such as a greeting,
+acknowledgment, or general conversational message, respond naturally.
 
-If the answer is not found in the context,
-reply:
+For questions about the uploaded documents, use ONLY the provided context.
+
+If a document-related question cannot be answered from the context, reply:
 
 "I couldn't find that information in the uploaded document."
 
@@ -51,7 +54,7 @@ Question:
 
 Answer:
 """
-model = OllamaLLM(model="llama3.2",base_url=os.getenv("OLLAMA_BASE_URL"))
+model = ChatGroq(model="openai/gpt-oss-20b",api_key=os.getenv("GROQ_API"))
 prompt = ChatPromptTemplate.from_template(template)
 chain = prompt | model
 embed_model=SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
@@ -329,8 +332,9 @@ def chat_stream():
         full_response = ""
 
         for chunk in answer_question_stream(document_id, user_message):
-            full_response += chunk
-            yield chunk
+            full_response += chunk.content
+            yield chunk.content.encode('utf-8')
+            
 
         cursor.execute(
             "INSERT INTO messages(user_id, role, content) VALUES (?,?,?)",

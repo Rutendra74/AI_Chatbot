@@ -1,6 +1,7 @@
 .venv/
 venv/
 env/
+test_env/
 chatbot/
 
 __pycache__/

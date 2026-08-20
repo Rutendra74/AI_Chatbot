@@ -6,6 +6,7 @@ __pycache__/
 chatbot/
 venv/
 .env
+test_env/
 
 # VS Code
 .vscode/
