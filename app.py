@@ -20,6 +20,19 @@ import pickle
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import time
+
+
+DATA_DIR = os.getenv("DATA_DIR", "data")
+
+UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
+VECTOR_DIR = os.path.join(DATA_DIR, "vector_store")
+DB_PATH = os.path.join(DATA_DIR, "user.db")
+
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(VECTOR_DIR, exist_ok=True)
+print("DB_PATH:", os.path.abspath(DB_PATH))
+print("DB EXISTS:", os.path.exists(DB_PATH))
+
 load_dotenv()
 app = Flask(__name__)
 limiter = Limiter(
@@ -68,7 +81,7 @@ def signup():
             flash('All Fields are Required!!')
             return render_template('signup.html',error='All Fields are Required')
         hash_password=generate_password_hash(password)
-        conn=sqlite3.connect('user.db')
+        conn=sqlite3.connect(DB_PATH)
         cursor=conn.cursor()
         cursor.execute('SELECT id FROM users WHERE email=?',(email,))
         user=cursor.fetchone()
@@ -90,7 +103,7 @@ def login():
     if request.method=='POST':
         email=request.form['email']
         password=request.form['password']
-        conn=sqlite3.connect('user.db')
+        conn=sqlite3.connect(DB_PATH)
         cursor=conn.cursor()
 
         cursor.execute('SELECT id,password_hash FROM users WHERE email=?',(email,))
@@ -129,23 +142,23 @@ def process_pdf(document_id,path):
     dimension=embedding.shape[1]
     index=faiss.IndexFlatL2(dimension)
     index.add(embedding)
-    os.makedirs("vector_store", exist_ok=True)
+
     
-    faiss.write_index(
-    index,
-    f"vector_store/{document_id}.index"
+    faiss.write_index(index,
+    os.path.join(VECTOR_DIR, f"{document_id}.index")
     )
-    with open(f"vector_store/{document_id}_chunks.pkl", "wb") as file:
+
+    with open(os.path.join(VECTOR_DIR, f"{document_id}_chunks.pkl"), "wb") as file:
         pickle.dump(texts, file)
 loaded_index,loaded_chunks={},{}
 #cache for FAISS index and document chunks to remove the task everytime
 def answer_question_stream(document_id, question):
     if document_id not in loaded_index:
-        loaded_index[document_id] = faiss.read_index(
-        f"vector_store/{document_id}.index"
+        loaded_index[document_id] = faiss.read_index(os.path.join(
+        VECTOR_DIR,f"{document_id}.index")
     )
     if document_id not in loaded_chunks:
-        with open(f"vector_store/{document_id}_chunks.pkl", "rb") as f:
+        with open(os.path.join(VECTOR_DIR,f"{document_id}_chunks.pkl"), "rb") as f:
             loaded_chunks[document_id] = pickle.load(f)
 
     index = loaded_index[document_id]
@@ -165,11 +178,11 @@ def answer_question_stream(document_id, question):
 
 def answer_question(document_id,question):
     if document_id not in loaded_index:
-        loaded_index[document_id] = faiss.read_index(
-        f"vector_store/{document_id}.index"
+        loaded_index[document_id] = faiss.read_index(os.path.join(
+        VECTOR_DIR,f"{document_id}.index")
     )
     if document_id not in loaded_chunks:
-        with open(f"vector_store/{document_id}_chunks.pkl", "rb") as f:
+        with open(os.path.join(VECTOR_DIR,f"{document_id}_chunks.pkl"), "rb") as f:
             loaded_chunks[document_id] = pickle.load(f)
 
     index = loaded_index[document_id]
@@ -199,10 +212,9 @@ def upload():
     file_name=secure_filename(file.filename)
     if not file_name.lower().endswith('.pdf'):
         return render_template('index.html',error='Please Insert pdf files only')
-    path=os.path.join('uploads',file_name)
-    os.makedirs('uploads',exist_ok=True)
+    path=os.path.join(UPLOAD_DIR,file_name)    
     file.save(path)
-    conn=sqlite3.connect('user.db')
+    conn=sqlite3.connect(DB_PATH)
     cursor=conn.cursor()
     cursor.execute('INSERT INTO document(document_name,file_path,user_id) VALUES (?,?,?)',(file_name,path,user_id))
     document_id=cursor.lastrowid
@@ -221,7 +233,7 @@ def index():
     user_id = get_jwt_identity()
     document_id=None
     filename=None
-    conn = sqlite3.connect("user.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
             """
@@ -298,7 +310,7 @@ def chat_stream():
     user_message = request.form["user_input"]
 
     # First connection: only to fetch document_id
-    conn = sqlite3.connect("user.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute(
@@ -326,7 +338,7 @@ def chat_stream():
     def generate():
 
         # Second connection: only for saving messages
-        conn = sqlite3.connect("user.db")
+        conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
         full_response = ""
