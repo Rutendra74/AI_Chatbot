@@ -11,7 +11,7 @@ from flask_jwt_extended import (
     get_jwt_identity,
     unset_jwt_cookies,set_access_cookies)
 from dotenv import load_dotenv
-import os
+import os, database
 from pypdf import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
@@ -30,8 +30,7 @@ DB_PATH = os.path.join(DATA_DIR, "user.db")
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(VECTOR_DIR, exist_ok=True)
-print("DB_PATH:", os.path.abspath(DB_PATH))
-print("DB EXISTS:", os.path.exists(DB_PATH))
+
 
 load_dotenv()
 app = Flask(__name__)
