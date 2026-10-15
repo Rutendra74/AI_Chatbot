@@ -134,10 +134,16 @@ def process_pdf(document_id,path):
         temp=page.extract_text()
         if temp:
             content+=temp+"\n\n"
+    if not content:
+        raise ValueError('No readable text available in the pdf. It might be scanned or image-based.')
     text_splitter=RecursiveCharacterTextSplitter(chunk_size=500,chunk_overlap=200)
     chunks=text_splitter.create_documents([content])
+    if not chunks:
+        raise ValueError('No chunks  are created')
     texts=[chunk.page_content for chunk in chunks]
     embedding=embed_model.encode(texts)
+    if embedding.ndim!=2 or embedding.shape[0]==0:
+        raise ValueError('Embedding generation returned an invalid result.')git
     dimension=embedding.shape[1]
     index=faiss.IndexFlatL2(dimension)
     index.add(embedding)
@@ -212,15 +218,60 @@ def upload():
     if not file_name.lower().endswith('.pdf'):
         return render_template('index.html',error='Please Insert pdf files only')
     path=os.path.join(UPLOAD_DIR,file_name)    
-    file.save(path)
-    conn=sqlite3.connect(DB_PATH)
-    cursor=conn.cursor()
-    cursor.execute('INSERT INTO document(document_name,file_path,user_id) VALUES (?,?,?)',(file_name,path,user_id))
-    document_id=cursor.lastrowid
-    
-    conn.commit()
-    conn.close()
-    process_pdf(document_id,path)
+    document_id=None
+    try:
+        file.save(path)
+        conn=sqlite3.connect(DB_PATH)
+        try:
+            cursor=conn.cursor()
+            cursor.execute('''INSERT INTO document (document_name, file_path, user_id)
+                   VALUES (?, ?, ?)''',(file_name,path,user_id))
+            document_id=cursor.lastrowid
+            conn.commit()
+        finally:
+            conn.close()
+        process_pdf(document_id,path)
+    except ValueError as e:
+        if document_id is not None:
+            conn=sqlite3.connect(DB_PATH)
+            try:
+                conn.execute(
+                    'DELETE FROM document WHERE id = ? AND user_id = ?',
+                    (document_id, user_id)
+                )
+                conn.commit()
+            finally:
+                conn.close()
+        if os.path.exists(path):
+            os.remove(path)
+
+        return render_template(
+            'index.html',
+            error=str(e)
+        )
+    except Exception:
+        # Unexpected error: log the traceback on the server
+        app.logger.exception("Unexpected PDF upload/processing failure")
+
+        if document_id is not None:
+            conn = sqlite3.connect(DB_PATH)
+            try:
+                conn.execute(
+                    'DELETE FROM document WHERE id = ? AND user_id = ?',
+                    (document_id, user_id)
+                )
+                conn.commit()
+            finally:
+                conn.close()
+
+        if os.path.exists(path):
+            os.remove(path)
+
+        return render_template(
+            'index.html',
+            error='Something went wrong while processing your PDF. Please try again.'
+        )
+
     return redirect(url_for('index'))
 @app.route('/',methods=['GET','POST'])
 def home():
