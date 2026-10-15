@@ -143,7 +143,7 @@ def process_pdf(document_id,path):
     texts=[chunk.page_content for chunk in chunks]
     embedding=embed_model.encode(texts)
     if embedding.ndim!=2 or embedding.shape[0]==0:
-        raise ValueError('Embedding generation returned an invalid result.')git
+        raise ValueError('Embedding generation returned an invalid result.')
     dimension=embedding.shape[1]
     index=faiss.IndexFlatL2(dimension)
     index.add(embedding)
