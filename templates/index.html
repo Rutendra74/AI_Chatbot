@@ -586,6 +586,12 @@ chatForm.addEventListener("submit", async function (e) {
             body: formData
         });
 
+        if (response.status === 401) {
+        alert("Your session has expired. Please log in again.");
+        window.location.href = "/login";
+        return;
+    }
+
         if (!response.ok) {
             throw new Error(`HTTP error: ${response.status}`);
         }

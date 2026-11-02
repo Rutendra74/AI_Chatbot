@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect,url_for,make_response,flash,Response
+from flask import Flask, render_template, request, redirect,url_for,make_response,flash,Response,jsonify
 from langchain_groq import ChatGroq
 from werkzeug.security import check_password_hash,generate_password_hash
 from langchain_core.prompts import ChatPromptTemplate
@@ -20,6 +20,8 @@ import pickle
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import time
+from datetime import datetime,timezone,timedelta
+
 
 
 DATA_DIR = os.getenv("DATA_DIR", "data")
@@ -42,6 +44,7 @@ limiter = Limiter(
 app.secret_key=os.getenv('APP_SECRET_KEY')
 app.config['JWT_SECRET_KEY']=os.getenv('JWT_SECRET_KEY')
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config['JWT_ACCESS_TOKEN_EXPIRES']=timedelta(minutes=60)
 app.config["JWT_COOKIE_CSRF_PROTECT"] = False
 jwt=JWTManager(app)
 TOP_K = int(os.getenv("TOP_K", 5))
@@ -424,7 +427,11 @@ def invalid_token_callback(reason):
 
 @jwt.expired_token_loader
 def expired_token_callback(jwt_header, jwt_payload):
-    return redirect(url_for("login"))
+    return jsonify({
+        "success": False,
+        "error": "token_expired",
+        "message": "Your session has expired. Please log in again."
+    }), 401
 if __name__ == "__main__":
     
     app.run(host="0.0.0.0", port=5000,debug=True)
